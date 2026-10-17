@@ -74,13 +74,13 @@ def accept_coding(state: State):
     text = str(decision).strip().lower()
 
     if text in ['y', 'yes', 'approve', 'ok']:
-        return {}
+        return {'next_code': 'coding_agent'}
 
     if text in ['n', 'no']:
         return {'messages': [{'role': 'assistant', 'content': 'Coding request denied by the user'}],
                 'next_node': 'denied'}
 
-    return {'messages': [{'role': 'user', 'content': text}], 'next_node': 'denied'}
+    return {'messages': [{'role': 'user', 'content': text}], 'next_node': 'prepare_coding_request'}
 
 
 def classify_intent(state: State):
@@ -176,7 +176,12 @@ graph_builder.add_conditional_edges(
 )
 graph_builder.add_edge('prepare_coding_request', 'accept_coding')
 graph_builder.add_conditional_edges('accept_coding',
-                                    lambda state: END if state.get('next_node') == 'denied' else 'code_agent')
+                                    lambda state: END if state.get('next_node') == 'denied' else state['next_node'],
+                                    {
+                                        "denied": END,
+                                        "approved": 'code_agent',
+                                        "prepare_coding_request": 'prepare_coding_request',
+                                    })
 
 graph_builder.add_edge('chat_agent', END)
 graph_builder.add_edge('rag_agent', END)
